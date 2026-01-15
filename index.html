@@ -617,13 +617,40 @@
                 padding: 1rem;
             }
 
-            .header h1 {
-                font-size: 1.25rem;
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
             }
 
-            .add-btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.875rem;
+            .header h1 {
+                font-size: 1.25rem;
+                width: 100%;
+            }
+
+            .auth-container {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .user-info {
+                width: 100%;
+                font-size: 0.8rem;
+                margin-bottom: 0.5rem;
+                order: -1;
+                /* Show email above buttons */
+            }
+
+            .add-btn,
+            .login-btn {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.8rem;
+                flex: 1;
+                /* Distribute space evenly */
+                text-align: center;
+                justify-content: center;
             }
 
             .container {
@@ -632,10 +659,12 @@
 
             .subject-tabs {
                 padding: 0.75rem;
+                justify-content: center;
+                /* Center tabs on mobile */
             }
 
             .tab-btn {
-                padding: 0.5rem 1rem;
+                padding: 0.4rem 0.8rem;
                 font-size: 0.8rem;
             }
 
