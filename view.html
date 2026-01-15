@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>デジ活ツール</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #f0f4f8;
+            --bg-secondary: #ffffff;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 16px;
+
+            /* 教科カラー */
+            --color-kokugo: #ef4444;
+            --color-sansu: #3b82f6;
+            --color-rika: #22c55e;
+            --color-shakai: #f97316;
+            --color-eigo: #a855f7;
+            --color-ongaku: #ec4899;
+            --color-zuko: #eab308;
+            --color-taiiku: #06b6d4;
+            --color-sonota: #6b7280;
+            --color-dotoku: #14b8a6;
+            --color-kateika: #f43f5e;
+            --color-sogo: #6366f1;
+            --color-gakkatsu: #84cc16;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header h1::before {
+            content: '🎒';
+            font-size: 1.5rem;
+        }
+
+        .teacher-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            background: #f7fafc;
+            border-radius: 50px;
+            transition: all 0.2s;
+        }
+
+        .teacher-link:hover {
+            background: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* 大きめのタブ */
+        .subject-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            color: var(--text-secondary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-btn.active {
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 教科別アクティブカラー */
+        .tab-btn[data-subject="all"].active {
+            background: #2d3748;
+        }
+
+        .tab-btn[data-subject="国語"].active {
+            background: var(--color-kokugo);
+        }
+
+        .tab-btn[data-subject="算数"].active {
+            background: var(--color-sansu);
+        }
+
+        .tab-btn[data-subject="理科"].active {
+            background: var(--color-rika);
+        }
+
+        .tab-btn[data-subject="社会"].active {
+            background: var(--color-shakai);
+        }
+
+        .tab-btn[data-subject="英語"].active {
+            background: var(--color-eigo);
+        }
+
+        .tab-btn[data-subject="音楽"].active {
+            background: var(--color-ongaku);
+        }
+
+        .tab-btn[data-subject="図工"].active {
+            background: var(--color-zuko);
+        }
+
+        .tab-btn[data-subject="体育"].active {
+            background: var(--color-taiiku);
+        }
+
+        .tab-btn[data-subject="道徳"].active {
+            background: var(--color-dotoku);
+        }
+
+        .tab-btn[data-subject="家庭科"].active {
+            background: var(--color-kateika);
+        }
+
+        .tab-btn[data-subject="総合"].active {
+            background: var(--color-sogo);
+        }
+
+        .tab-btn[data-subject="学活"].active {
+            background: var(--color-gakkatsu);
+        }
+
+        .tab-btn[data-subject="その他"].active {
+            background: var(--color-sonota);
+        }
+
+        /* カードグリッド */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            height: 12px;
+        }
+
+        /* ヘッダーカラー（変数利用） */
+        .card-header.国語 {
+            background: var(--color-kokugo);
+        }
+
+        .card-header.算数 {
+            background: var(--color-sansu);
+        }
+
+        .card-header.理科 {
+            background: var(--color-rika);
+        }
+
+        .card-header.社会 {
+            background: var(--color-shakai);
+        }
+
+        .card-header.英語 {
+            background: var(--color-eigo);
+        }
+
+        .card-header.音楽 {
+            background: var(--color-ongaku);
+        }
+
+        .card-header.図工 {
+            background: var(--color-zuko);
+        }
+
+        .card-header.体育 {
+            background: var(--color-taiiku);
+        }
+
+        .card-header.道徳 {
+            background: var(--color-dotoku);
+        }
+
+        .card-header.家庭科 {
+            background: var(--color-kateika);
+        }
+
+        .card-header.総合 {
+            background: var(--color-sogo);
+        }
+
+        .card-header.学活 {
+            background: var(--color-gakkatsu);
+        }
+
+        .card-header.その他 {
+            background: var(--color-sonota);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .subject-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 0.5rem;
+            background: #cbd5e0;
+            /* デフォルト */
+        }
+
+        /* バッジカラー */
+        .subject-badge.国語 {
+            background: var(--color-kokugo);
+        }
+
+        .subject-badge.算数 {
+            background: var(--color-sansu);
+        }
+
+        .subject-badge.理科 {
+            background: var(--color-rika);
+        }
+
+        .subject-badge.社会 {
+            background: var(--color-shakai);
+        }
+
+        .subject-badge.英語 {
+            background: var(--color-eigo);
+        }
+
+        .subject-badge.音楽 {
+            background: var(--color-ongaku);
+        }
+
+        .subject-badge.図工 {
+            background: var(--color-zuko);
+        }
+
+        .subject-badge.体育 {
+            background: var(--color-taiiku);
+        }
+
+        .subject-badge.道徳 {
+            background: var(--color-dotoku);
+        }
+
+        .subject-badge.家庭科 {
+            background: var(--color-kateika);
+        }
+
+        .subject-badge.総合 {
+            background: var(--color-sogo);
+        }
+
+        .subject-badge.学活 {
+            background: var(--color-gakkatsu);
+        }
+
+        .subject-badge.その他 {
+            background: var(--color-sonota);
+        }
+
+        .tool-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0 1.5rem 0;
+            color: var(--text-primary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .open-btn {
+            flex: 2;
+            background: #2d3748;
+            color: white;
+            text-decoration: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .open-btn:hover {
+            background: #1a202c;
+        }
+
+        .qr-btn {
+            flex: 1;
+            background: white;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .qr-btn:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+
+        /* QRモーダル */
+        .qr-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .qr-modal {
+            background: white;
+            padding: 3rem;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 90%;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #qrCodeContainer {
+            margin: 2rem auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        #qrToolName {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .close-qr-btn {
+            margin-top: 1rem;
+            padding: 0.75rem 2rem;
+            font-size: 1.1rem;
+            background: #edf2f7;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+
+        .close-qr-btn:hover {
+            background: #e2e8f0;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <h1>デジ活ツール</h1>
+        <a href="index.html" class="teacher-link">先生用ページへ</a>
+    </header>
+
+    <div class="container">
+        <nav class="subject-tabs" id="subjectTabs">
+            <button class="tab-btn active" data-subject="all">すべて</button>
+            <button class="tab-btn" data-subject="国語">国語</button>
+            <button class="tab-btn" data-subject="算数">算数</button>
+            <button class="tab-btn" data-subject="理科">理科</button>
+            <button class="tab-btn" data-subject="社会">社会</button>
+            <button class="tab-btn" data-subject="英語">英語</button>
+            <button class="tab-btn" data-subject="音楽">音楽</button>
+            <button class="tab-btn" data-subject="図工">図工</button>
+            <button class="tab-btn" data-subject="体育">体育</button>
+            <button class="tab-btn" data-subject="道徳">道徳</button>
+            <button class="tab-btn" data-subject="家庭科">家庭科</button>
+            <button class="tab-btn" data-subject="総合">総合</button>
+            <button class="tab-btn" data-subject="学活">学活</button>
+            <button class="tab-btn" data-subject="その他">その他</button>
+        </nav>
+
+        <div class="tools-grid" id="toolsGrid">
+            <!-- ツールカード -->
+        </div>
+    </div>
+
+    <!-- QRモーダル -->
+    <div class="qr-modal-overlay" id="qrModalOverlay">
+        <div class="qr-modal">
+            <div id="qrToolName">ツール名</div>
+            <div id="qrCodeContainer"></div>
+            <button class="close-qr-btn" onclick="closeQrModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
+
+        // Firebase設定（index.htmlと同じ）
+        const firebaseConfig = {
+            apiKey: "AIzaSyBx2B8AemAyoXFNR6kmWk1OCsnUNHFc4kI",
+            authDomain: "gen-lang-client-0309545089.firebaseapp.com",
+            projectId: "gen-lang-client-0309545089",
+            storageBucket: "gen-lang-client-0309545089.firebasestorage.app",
+            messagingSenderId: "400466016438",
+            appId: "1:400466016438:web:eed4fc62974097e26cce17",
+            measurementId: "G-XL68PEV1QD"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const toolsCol = collection(db, 'tools');
+
+        let allTools = [];
+
+        // ツール読み込み
+        async function loadTools() {
+            try {
+                const q = query(toolsCol, orderBy('createdAt', 'desc'));
+                const snapshot = await getDocs(q);
+                allTools = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTools(allTools);
+            } catch (error) {
+                console.error("Error loading tools:", error);
+            }
+        }
+
+        // ツール描画
+        function renderTools(tools) {
+            const grid = document.getElementById('toolsGrid');
+            grid.innerHTML = '';
+
+            tools.forEach(tool => {
+                const card = document.createElement('div');
+                card.className = 'tool-card';
+                card.innerHTML = `
+                    <div class="card-header ${tool.subject}"></div>
+                    <div class="card-body">
+                        <span class="subject-badge ${tool.subject}">${getEmoji(tool.subject)} ${tool.subject}</span>
+                        <h2 class="tool-title">${tool.name}</h2>
+                        <div class="action-buttons">
+                            <a href="${tool.url}" target="_blank" class="open-btn">
+                                🚀 開く
+                            </a>
+                            <button class="qr-btn" onclick="window.showQr('${tool.name}', '${tool.url}')">
+                                📱
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 件名別絵文字
+        function getEmoji(subject) {
+            const map = {
+                '国語': '📖', '算数': '🔢', '理科': '🔬', '社会': '🌍',
+                '英語': '🔤', '音楽': '🎵', '図工': '🎨', '体育': '⚽',
+                '道徳': '🧡', '家庭科': '🍳', '総合': '🔍', '学活': '🏫',
+                'その他': '📁'
+            };
+            return map[subject] || '📄';
+        }
+
+        // タブ切り替え
+        document.getElementById('subjectTabs').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('tab-btn')) return;
+
+            // タブのアクティブ化
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+
+            // フィルタリング
+            const subject = e.target.dataset.subject;
+            if (subject === 'all') {
+                renderTools(allTools);
+            } else {
+                renderTools(allTools.filter(t => t.subject === subject));
+            }
+        });
+
+        // グローバル関数として公開
+        window.showQr = (name, url) => {
+            document.getElementById('qrToolName').textContent = name;
+            const container = document.getElementById('qrCodeContainer');
+            container.innerHTML = '';
+            new QRCode(container, {
+                text: url,
+                width: 200,
+                height: 200
+            });
+            document.getElementById('qrModalOverlay').style.display = 'flex';
+        };
+
+        window.closeQrModal = () => {
+            document.getElementById('qrModalOverlay').style.display = 'none';
+        };
+
+        // 初期化
+        loadTools();
+    </script>
+</body>
+
+</html>

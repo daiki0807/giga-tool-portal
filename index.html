@@ -28,6 +28,12 @@
             --color-zuko: #eab308;
             --color-taiiku: #06b6d4;
             --color-sonota: #6b7280;
+
+            /* 新しい教科 */
+            --color-dotoku: #14b8a6;
+            --color-kateika: #f43f5e;
+            --color-sogo: #6366f1;
+            --color-gakkatsu: #84cc16;
         }
 
         * {
@@ -91,6 +97,34 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            transform: translateY(-2px);
+        }
+
+        .auth-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .login-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: white;
+            color: #1a202c;
+        }
+
+        .user-info {
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
         }
 
         .add-btn:hover {
@@ -181,6 +215,22 @@
             background: var(--color-sonota);
         }
 
+        .tab-btn[data-subject="道徳"].active {
+            background: var(--color-dotoku);
+        }
+
+        .tab-btn[data-subject="家庭科"].active {
+            background: var(--color-kateika);
+        }
+
+        .tab-btn[data-subject="総合"].active {
+            background: var(--color-sogo);
+        }
+
+        .tab-btn[data-subject="学活"].active {
+            background: var(--color-gakkatsu);
+        }
+
         /* ツールグリッド */
         .tools-grid {
             display: grid;
@@ -244,6 +294,22 @@
             background: var(--color-sonota);
         }
 
+        .card-header.道徳 {
+            background: var(--color-dotoku);
+        }
+
+        .card-header.家庭科 {
+            background: var(--color-kateika);
+        }
+
+        .card-header.総合 {
+            background: var(--color-sogo);
+        }
+
+        .card-header.学活 {
+            background: var(--color-gakkatsu);
+        }
+
         .card-content {
             padding: 1.25rem;
         }
@@ -292,6 +358,22 @@
 
         .card-subject.その他 {
             background: var(--color-sonota);
+        }
+
+        .card-subject.道徳 {
+            background: var(--color-dotoku);
+        }
+
+        .card-subject.家庭科 {
+            background: var(--color-kateika);
+        }
+
+        .card-subject.総合 {
+            background: var(--color-sogo);
+        }
+
+        .card-subject.学活 {
+            background: var(--color-gakkatsu);
         }
 
         .card-title {
@@ -562,6 +644,14 @@
                 gap: 1rem;
             }
         }
+
+        .delete-btn-confirm:hover {
+            background: #b91c1c !important;
+        }
+
+        .cancel-btn:hover {
+            background: #a0aec0 !important;
+        }
     </style>
 </head>
 
@@ -574,9 +664,16 @@
     <header class="header">
         <div class="header-content">
             <h1>デジ活ツール（クラウド版）</h1>
-            <button class="add-btn" id="openModalBtn">
-                <span>＋</span> ツールを追加
-            </button>
+            <div class="auth-container">
+                <a href="view.html" class="login-btn"
+                    style="text-decoration: none; background: #4299e1; border: none;">👧 児童用ページ</a>
+                <div id="userInfo" class="user-info" style="display: none;"></div>
+                <button class="login-btn" id="loginBtn">管理者ログイン</button>
+                <button class="login-btn" id="logoutBtn" style="display: none;">ログアウト</button>
+                <button class="add-btn" id="openModalBtn" style="display: none;">
+                    <span>＋</span> ツールを追加
+                </button>
+            </div>
         </div>
     </header>
 
@@ -591,6 +688,10 @@
             <button class="tab-btn" data-subject="音楽">🎵 音楽</button>
             <button class="tab-btn" data-subject="図工">🎨 図工</button>
             <button class="tab-btn" data-subject="体育">⚽ 体育</button>
+            <button class="tab-btn" data-subject="道徳">🧡 道徳</button>
+            <button class="tab-btn" data-subject="家庭科">🍳 家庭科</button>
+            <button class="tab-btn" data-subject="総合">🔍 総合</button>
+            <button class="tab-btn" data-subject="学活">🏫 学活</button>
             <button class="tab-btn" data-subject="その他">📁 その他</button>
         </nav>
 
@@ -635,11 +736,35 @@
                             <option value="音楽">音楽</option>
                             <option value="図工">図工</option>
                             <option value="体育">体育</option>
+                            <option value="道徳">道徳</option>
+                            <option value="家庭科">家庭科</option>
+                            <option value="総合">総合</option>
+                            <option value="学活">学活</option>
                             <option value="その他">その他</option>
                         </select>
                     </div>
                     <button type="submit" class="submit-btn" id="submitBtn">追加する</button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 削除確認モーダル -->
+    <div class="modal-overlay" id="deleteModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>削除の確認</h2>
+                <button class="close-btn" id="closeDeleteModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>本当にこのツールを削除しますか？</p>
+                <p id="deleteToolName" style="font-weight: bold; margin: 1rem 0;"></p>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button class="submit-btn delete-btn-confirm" id="confirmDeleteBtn"
+                        style="background: #dc2626;">削除する</button>
+                    <button class="submit-btn cancel-btn" id="cancelDeleteBtn"
+                        style="background: #cbd5e0; color: #4a5568;">キャンセル</button>
+                </div>
             </div>
         </div>
     </div>
@@ -659,6 +784,16 @@
             orderBy,
             serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
+        import {
+            getAuth,
+            signInWithPopup,
+            GoogleAuthProvider,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-auth.js";
+
+        // 定数
+        const ADMIN_EMAIL = 'd.a0807derude@gmail.com';
 
         // Firebase設定
         const firebaseConfig = {
@@ -674,6 +809,8 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
         const toolsCol = collection(db, 'tools');
 
         // データ管理クラス
@@ -735,6 +872,8 @@
                 this.toolManager = toolManager;
                 this.currentSubject = 'all';
                 this.editingId = null;
+                this.pendingDeleteId = null;
+                this.isAdmin = false;
 
                 this.initElements();
                 this.initEventListeners();
@@ -754,11 +893,27 @@
                 this.submitBtn = document.getElementById('submitBtn');
                 this.subjectTabs = document.getElementById('subjectTabs');
                 this.loadingOverlay = document.getElementById('loadingOverlay');
+
+                // 認証要素
+                this.loginBtn = document.getElementById('loginBtn');
+                this.logoutBtn = document.getElementById('logoutBtn');
+                this.userInfo = document.getElementById('userInfo');
+                this.openModalBtn = document.getElementById('openModalBtn');
+
+                // 削除モーダル要素
+                this.deleteModalOverlay = document.getElementById('deleteModalOverlay');
+                this.deleteToolName = document.getElementById('deleteToolName');
+                this.confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                this.cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
             }
 
             initEventListeners() {
+                // 認証
+                this.loginBtn.addEventListener('click', () => this.handleLogin());
+                this.logoutBtn.addEventListener('click', () => this.handleLogout());
+
                 // モーダル開閉
-                document.getElementById('openModalBtn').addEventListener('click', () => this.openModal());
+                this.openModalBtn.addEventListener('click', () => this.openModal());
                 document.getElementById('closeModalBtn').addEventListener('click', () => this.closeModal());
                 this.modalOverlay.addEventListener('click', (e) => {
                     if (e.target === this.modalOverlay) this.closeModal();
@@ -776,7 +931,18 @@
 
                 // キーボードショートカット
                 document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') this.closeModal();
+                    if (e.key === 'Escape') {
+                        this.closeModal();
+                        this.closeDeleteModal();
+                    }
+                });
+
+                // 削除モーダル
+                document.getElementById('closeDeleteModalBtn').addEventListener('click', () => this.closeDeleteModal());
+                this.cancelDeleteBtn.addEventListener('click', () => this.closeDeleteModal());
+                this.confirmDeleteBtn.addEventListener('click', () => this.executeDelete());
+                this.deleteModalOverlay.addEventListener('click', (e) => {
+                    if (e.target === this.deleteModalOverlay) this.closeDeleteModal();
                 });
             }
 
@@ -785,9 +951,55 @@
 
             async initializeApp() {
                 this.showLoading();
+
+                // 認証状態の監視
+                onAuthStateChanged(auth, (user) => {
+                    this.handleAuthStateChange(user);
+                });
+
                 await this.toolManager.loadTools();
                 this.renderTools();
                 this.hideLoading();
+            }
+
+            async handleLogin() {
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    console.error("Login failed:", error);
+                    alert("ログインに失敗しました。");
+                }
+            }
+
+            async handleLogout() {
+                try {
+                    await signOut(auth);
+                } catch (error) {
+                    console.error("Logout failed:", error);
+                }
+            }
+
+            handleAuthStateChange(user) {
+                if (user) {
+                    this.isAdmin = (user.email === ADMIN_EMAIL);
+                    this.userInfo.textContent = user.email;
+                    this.userInfo.style.display = 'block';
+                    this.loginBtn.style.display = 'none';
+                    this.logoutBtn.style.display = 'block';
+
+                    if (this.isAdmin) {
+                        this.openModalBtn.style.display = 'flex';
+                    } else {
+                        this.openModalBtn.style.display = 'none';
+                    }
+                } else {
+                    this.isAdmin = false;
+                    this.userInfo.style.display = 'none';
+                    this.loginBtn.style.display = 'block';
+                    this.logoutBtn.style.display = 'none';
+                    this.openModalBtn.style.display = 'none';
+                }
+                this.renderTools();
             }
 
             openModal(tool = null) {
@@ -881,20 +1093,9 @@
                 });
 
                 this.toolsGrid.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        if (confirm('このツールを削除しますか？')) {
-                            this.showLoading();
-                            try {
-                                await this.toolManager.deleteTool(btn.dataset.id);
-                                await this.toolManager.loadTools();
-                                this.renderTools();
-                            } catch (error) {
-                                console.error("Error deleting tool:", error);
-                                alert("削除に失敗しました。");
-                            } finally {
-                                this.hideLoading();
-                            }
-                        }
+                    btn.addEventListener('click', () => {
+                        const tool = this.toolManager.getToolById(btn.dataset.id);
+                        if (tool) this.openDeleteModal(tool);
                     });
                 });
             }
@@ -909,8 +1110,10 @@
                             <p class="card-url">${this.escapeHtml(tool.url)}</p>
                             <div class="card-actions">
                                 <button class="card-btn open-btn" data-url="${this.escapeHtml(tool.url)}">開く</button>
+                                ${this.isAdmin ? `
                                 <button class="card-btn edit-btn" data-id="${tool.id}">編集</button>
                                 <button class="card-btn delete-btn" data-id="${tool.id}">🗑</button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -921,6 +1124,34 @@
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
+            }
+
+            openDeleteModal(tool) {
+                this.pendingDeleteId = tool.id;
+                this.deleteToolName.textContent = tool.name;
+                this.deleteModalOverlay.classList.add('active');
+            }
+
+            closeDeleteModal() {
+                this.deleteModalOverlay.classList.remove('active');
+                this.pendingDeleteId = null;
+            }
+
+            async executeDelete() {
+                if (!this.pendingDeleteId) return;
+
+                this.showLoading();
+                try {
+                    await this.toolManager.deleteTool(this.pendingDeleteId);
+                    await this.toolManager.loadTools();
+                    this.renderTools();
+                    this.closeDeleteModal();
+                } catch (error) {
+                    console.error("Error deleting tool:", error);
+                    alert("削除に失敗しました。");
+                } finally {
+                    this.hideLoading();
+                }
             }
         }
 
