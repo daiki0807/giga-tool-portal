@@ -488,10 +488,6 @@
                 <label for="filterYear">年度:</label>
                 <select id="filterYear">
                     <option value="all">すべての年度</option>
-                    <option value="2023年度">2023年度</option>
-                    <option value="2024年度">2024年度</option>
-                    <option value="2025年度">2025年度</option>
-                    <option value="2026年度">2026年度</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -542,7 +538,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js";
 
         // Firebase設定（index.htmlと同じ）
         const firebaseConfig = {
@@ -564,6 +560,24 @@
         // ツール読み込み
         async function loadTools() {
             try {
+                // 年度の読み込み
+                const docRef = doc(db, 'config', 'general');
+                const docSnap = await getDoc(docRef);
+                const filterYearSelect = document.getElementById('filterYear');
+                
+                if (docSnap.exists() && docSnap.data().years) {
+                    const years = docSnap.data().years;
+                    years.forEach(y => {
+                        const opt = document.createElement('option');
+                        opt.value = y; opt.textContent = y;
+                        filterYearSelect.appendChild(opt);
+                    });
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = "2026年度"; opt.textContent = "2026年度";
+                    filterYearSelect.appendChild(opt);
+                }
+
                 const q = query(toolsCol, orderBy('createdAt', 'desc'));
                 const snapshot = await getDocs(q);
                 allTools = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

@@ -751,6 +751,9 @@
                 <div id="userInfo" class="user-info" style="display: none;"></div>
                 <button class="login-btn" id="loginBtn">管理者ログイン</button>
                 <button class="login-btn" id="logoutBtn" style="display: none;">ログアウト</button>
+                <button class="add-btn" id="manageYearsBtn" style="display: none; background: #4a5568; margin-right: 0.5rem;">
+                    <span>📅</span> 年度を管理
+                </button>
                 <button class="add-btn" id="openModalBtn" style="display: none;">
                     <span>＋</span> ツールを追加
                 </button>
@@ -764,10 +767,6 @@
                 <label for="filterYear">年度:</label>
                 <select id="filterYear">
                     <option value="all">すべての年度</option>
-                    <option value="2023年度">2023年度</option>
-                    <option value="2024年度">2024年度</option>
-                    <option value="2025年度">2025年度</option>
-                    <option value="2026年度">2026年度</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -835,10 +834,6 @@
                             <label for="toolYear">年度</label>
                             <select id="toolYear">
                                 <option value="全年度">全年度</option>
-                                <option value="2023年度">2023年度</option>
-                                <option value="2024年度">2024年度</option>
-                                <option value="2025年度">2025年度</option>
-                                <option value="2026年度">2026年度</option>
                             </select>
                         </div>
                         <div style="flex: 1;">
@@ -899,6 +894,25 @@
         </div>
     </div>
 
+    <!-- 年度管理モーダル -->
+    <div class="modal-overlay" id="yearModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>年度を管理</h2>
+                <button class="close-btn" id="closeYearModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1rem;">
+                    <ul id="yearList" style="list-style: none; padding: 0; max-height: 300px; overflow-y: auto;"></ul>
+                </div>
+                <div class="form-group" style="display: flex; gap: 0.5rem; margin-bottom: 0;">
+                    <input type="text" id="newYearInput" placeholder="例: 2027年度" style="flex: 1;">
+                    <button class="submit-btn" id="addYearBtn" style="width: auto; padding: 0.5rem 1.5rem;">追加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
@@ -910,6 +924,8 @@
             updateDoc,
             deleteDoc,
             doc,
+            getDoc,
+            setDoc,
             query,
             orderBy,
             serverTimestamp
@@ -942,6 +958,45 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
         const toolsCol = collection(db, 'tools');
+
+        // 年度管理クラス
+        class YearManager {
+            constructor() {
+                this.years = ['2026年度'];
+            }
+            async loadYears() {
+                try {
+                    const docRef = doc(db, 'config', 'general');
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists() && docSnap.data().years) {
+                        this.years = docSnap.data().years;
+                    } else {
+                        await setDoc(docRef, { years: this.years }, { merge: true });
+                    }
+                    return this.years;
+                } catch (error) {
+                    console.error("Error loading years:", error);
+                    return this.years;
+                }
+            }
+            async addYear(newYear) {
+                if (!this.years.includes(newYear)) {
+                    this.years.push(newYear);
+                    this.years.sort().reverse(); //降順ソート
+                    await this.saveYears();
+                }
+            }
+            async deleteYear(target) {
+                this.years = this.years.filter(y => y !== target);
+                await this.saveYears();
+            }
+            async saveYears() {
+                try {
+                    const docRef = doc(db, 'config', 'general');
+                    await setDoc(docRef, { years: this.years }, { merge: true });
+                } catch(e) { console.error('Error saving years', e); }
+            }
+        }
 
         // データ管理クラス
         class ToolManager {
@@ -1005,8 +1060,9 @@
 
         // UIコントローラー
         class UIController {
-            constructor(toolManager) {
+            constructor(toolManager, yearManager) {
                 this.toolManager = toolManager;
+                this.yearManager = yearManager;
                 this.currentSubject = 'all';
                 this.currentYear = 'all';
                 this.currentGrade = 'all';
@@ -1042,6 +1098,14 @@
                 this.logoutBtn = document.getElementById('logoutBtn');
                 this.userInfo = document.getElementById('userInfo');
                 this.openModalBtn = document.getElementById('openModalBtn');
+                this.manageYearsBtn = document.getElementById('manageYearsBtn');
+
+                // 年度モーダル要素
+                this.yearModalOverlay = document.getElementById('yearModalOverlay');
+                this.closeYearModalBtn = document.getElementById('closeYearModalBtn');
+                this.yearList = document.getElementById('yearList');
+                this.newYearInput = document.getElementById('newYearInput');
+                this.addYearBtn = document.getElementById('addYearBtn');
 
                 // 削除モーダル要素
                 this.deleteModalOverlay = document.getElementById('deleteModalOverlay');
@@ -1061,6 +1125,14 @@
                 this.modalOverlay.addEventListener('click', (e) => {
                     if (e.target === this.modalOverlay) this.closeModal();
                 });
+
+                // 年度管理
+                this.manageYearsBtn.addEventListener('click', () => this.openYearModal());
+                this.closeYearModalBtn.addEventListener('click', () => this.closeYearModal());
+                this.yearModalOverlay.addEventListener('click', (e) => {
+                    if (e.target === this.yearModalOverlay) this.closeYearModal();
+                });
+                this.addYearBtn.addEventListener('click', () => this.handleAddYear());
 
                 // フォーム送信
                 this.toolForm.addEventListener('submit', (e) => this.handleSubmit(e));
@@ -1110,8 +1182,98 @@
                     this.handleAuthStateChange(user);
                 });
 
+                await this.yearManager.loadYears();
+                this.renderYearOptions();
+
                 await this.toolManager.loadTools();
                 this.renderTools();
+                this.hideLoading();
+            }
+
+            renderYearOptions() {
+                const years = this.yearManager.years;
+                
+                // filterYear
+                this.filterYear.innerHTML = '<option value="all">すべての年度</option>';
+                years.forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y; opt.textContent = y;
+                    this.filterYear.appendChild(opt);
+                });
+                
+                // toolYear
+                this.toolYearInput.innerHTML = '<option value="全年度">全年度</option>';
+                years.forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y; opt.textContent = y;
+                    this.toolYearInput.appendChild(opt);
+                });
+            }
+
+            openYearModal() {
+                this.renderYearList();
+                this.yearModalOverlay.classList.add('active');
+                this.newYearInput.focus();
+            }
+
+            closeYearModal() {
+                this.yearModalOverlay.classList.remove('active');
+                this.newYearInput.value = '';
+            }
+
+            renderYearList() {
+                this.yearList.innerHTML = '';
+                this.yearManager.years.forEach(y => {
+                    const li = document.createElement('li');
+                    li.style.display = 'flex';
+                    li.style.justifyContent = 'space-between';
+                    li.style.alignItems = 'center';
+                    li.style.padding = '0.5rem';
+                    li.style.borderBottom = '1px solid var(--border-color)';
+                    
+                    const text = document.createElement('span');
+                    text.textContent = y;
+                    text.style.fontWeight = 'bold';
+                    
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = '削除';
+                    delBtn.style.background = '#fee2e2';
+                    delBtn.style.color = '#dc2626';
+                    delBtn.style.border = 'none';
+                    delBtn.style.padding = '0.3rem 0.6rem';
+                    delBtn.style.borderRadius = '4px';
+                    delBtn.style.cursor = 'pointer';
+                    delBtn.onclick = async () => {
+                        if (confirm(`${y} を削除しますか？`)) {
+                            this.showLoading();
+                            await this.yearManager.deleteYear(y);
+                            this.renderYearOptions();
+                            this.renderYearList();
+                            // 削除して表示中の年が変わった場合は全てに戻す
+                            if (this.currentYear === y) {
+                                this.currentYear = 'all';
+                                this.filterYear.value = 'all';
+                            }
+                            this.renderTools();
+                            this.hideLoading();
+                        }
+                    };
+                    
+                    li.appendChild(text);
+                    li.appendChild(delBtn);
+                    this.yearList.appendChild(li);
+                });
+            }
+
+            async handleAddYear() {
+                const newYear = this.newYearInput.value.trim();
+                if (!newYear) return;
+                
+                this.showLoading();
+                await this.yearManager.addYear(newYear);
+                this.newYearInput.value = '';
+                this.renderYearOptions();
+                this.renderYearList();
                 this.hideLoading();
             }
 
@@ -1142,8 +1304,10 @@
 
                     if (this.isAdmin) {
                         this.openModalBtn.style.display = 'flex';
+                        this.manageYearsBtn.style.display = 'flex';
                     } else {
                         this.openModalBtn.style.display = 'none';
+                        this.manageYearsBtn.style.display = 'none';
                     }
                 } else {
                     this.isAdmin = false;
@@ -1151,6 +1315,7 @@
                     this.loginBtn.style.display = 'block';
                     this.logoutBtn.style.display = 'none';
                     this.openModalBtn.style.display = 'none';
+                    this.manageYearsBtn.style.display = 'none';
                 }
                 this.renderTools();
             }
