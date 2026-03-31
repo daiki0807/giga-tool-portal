@@ -390,6 +390,7 @@
             margin-bottom: 1rem;
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2; /* CSSLint警告対応 */
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -681,6 +682,57 @@
         .cancel-btn:hover {
             background: #a0aec0 !important;
         }
+
+        /* フィルター・バッジ設定 */
+        .filter-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .filter-group select {
+            padding: 0.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-group select:focus {
+            border-color: #2d3748;
+        }
+
+        .tool-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .meta-badge {
+            background: #edf2f7;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -707,6 +759,31 @@
     </header>
 
     <main class="container">
+        <div class="filter-container">
+            <div class="filter-group">
+                <label for="filterYear">年度:</label>
+                <select id="filterYear">
+                    <option value="all">すべての年度</option>
+                    <option value="2023年度">2023年度</option>
+                    <option value="2024年度">2024年度</option>
+                    <option value="2025年度">2025年度</option>
+                    <option value="2026年度">2026年度</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterGrade">学年:</label>
+                <select id="filterGrade">
+                    <option value="all">すべての学年</option>
+                    <option value="1年生">1年生</option>
+                    <option value="2年生">2年生</option>
+                    <option value="3年生">3年生</option>
+                    <option value="4年生">4年生</option>
+                    <option value="5年生">5年生</option>
+                    <option value="6年生">6年生</option>
+                </select>
+            </div>
+        </div>
+
         <nav class="subject-tabs" id="subjectTabs">
             <button class="tab-btn active" data-subject="all">📚 すべて</button>
             <button class="tab-btn" data-subject="国語">📖 国語</button>
@@ -752,6 +829,30 @@
                     <div class="form-group">
                         <label for="toolUrl">URL *</label>
                         <input type="url" id="toolUrl" placeholder="例: https://www.nhk.or.jp/school/" required>
+                    </div>
+                    <div class="form-group" style="display: flex; gap: 1rem;">
+                        <div style="flex: 1;">
+                            <label for="toolYear">年度</label>
+                            <select id="toolYear">
+                                <option value="全年度">全年度</option>
+                                <option value="2023年度">2023年度</option>
+                                <option value="2024年度">2024年度</option>
+                                <option value="2025年度">2025年度</option>
+                                <option value="2026年度">2026年度</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="toolGrade">学年</label>
+                            <select id="toolGrade">
+                                <option value="全学年">全学年</option>
+                                <option value="1年生">1年生</option>
+                                <option value="2年生">2年生</option>
+                                <option value="3年生">3年生</option>
+                                <option value="4年生">4年生</option>
+                                <option value="5年生">5年生</option>
+                                <option value="6年生">6年生</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="toolSubject">教科 *</label>
@@ -883,11 +984,18 @@
                 await deleteDoc(toolRef);
             }
 
-            getTools(subject = 'all') {
-                if (subject === 'all') {
-                    return this.tools;
+            getTools(subject = 'all', year = 'all', grade = 'all') {
+                let filtered = this.tools;
+                if (subject !== 'all') {
+                    filtered = filtered.filter(t => t.subject === subject);
                 }
-                return this.tools.filter(t => t.subject === subject);
+                if (year !== 'all') {
+                    filtered = filtered.filter(t => !t.year || t.year === '全年度' || t.year === year);
+                }
+                if (grade !== 'all') {
+                    filtered = filtered.filter(t => !t.grade || t.grade === '全学年' || t.grade === grade);
+                }
+                return filtered;
             }
 
             getToolById(id) {
@@ -900,6 +1008,8 @@
             constructor(toolManager) {
                 this.toolManager = toolManager;
                 this.currentSubject = 'all';
+                this.currentYear = 'all';
+                this.currentGrade = 'all';
                 this.editingId = null;
                 this.pendingDeleteId = null;
                 this.isAdmin = false;
@@ -918,9 +1028,13 @@
                 this.toolIdInput = document.getElementById('toolId');
                 this.toolNameInput = document.getElementById('toolName');
                 this.toolUrlInput = document.getElementById('toolUrl');
+                this.toolYearInput = document.getElementById('toolYear');
+                this.toolGradeInput = document.getElementById('toolGrade');
                 this.toolSubjectInput = document.getElementById('toolSubject');
                 this.submitBtn = document.getElementById('submitBtn');
                 this.subjectTabs = document.getElementById('subjectTabs');
+                this.filterYear = document.getElementById('filterYear');
+                this.filterGrade = document.getElementById('filterGrade');
                 this.loadingOverlay = document.getElementById('loadingOverlay');
 
                 // 認証要素
@@ -956,6 +1070,16 @@
                     if (e.target.classList.contains('tab-btn')) {
                         this.selectSubject(e.target.dataset.subject);
                     }
+                });
+
+                // フィルター（年度・学年）
+                this.filterYear.addEventListener('change', (e) => {
+                    this.currentYear = e.target.value;
+                    this.renderTools();
+                });
+                this.filterGrade.addEventListener('change', (e) => {
+                    this.currentGrade = e.target.value;
+                    this.renderTools();
                 });
 
                 // キーボードショートカット
@@ -1041,9 +1165,13 @@
                     this.toolNameInput.value = tool.name;
                     this.toolUrlInput.value = tool.url;
                     this.toolSubjectInput.value = tool.subject;
+                    this.toolYearInput.value = tool.year || '全年度';
+                    this.toolGradeInput.value = tool.grade || '全学年';
                 } else {
                     this.toolForm.reset();
                     this.toolIdInput.value = '';
+                    this.toolYearInput.value = '全年度';
+                    this.toolGradeInput.value = '全学年';
                 }
 
                 this.modalOverlay.classList.add('active');
@@ -1063,7 +1191,9 @@
                 const toolData = {
                     name: this.toolNameInput.value.trim(),
                     url: this.toolUrlInput.value.trim(),
-                    subject: this.toolSubjectInput.value
+                    subject: this.toolSubjectInput.value,
+                    year: this.toolYearInput.value,
+                    grade: this.toolGradeInput.value
                 };
 
                 try {
@@ -1096,7 +1226,7 @@
             }
 
             renderTools() {
-                const tools = this.toolManager.getTools(this.currentSubject);
+                const tools = this.toolManager.getTools(this.currentSubject, this.currentYear, this.currentGrade);
 
                 if (tools.length === 0) {
                     this.toolsGrid.innerHTML = '';
@@ -1134,6 +1264,10 @@
                     <div class="tool-card">
                         <div class="card-header ${tool.subject}"></div>
                         <div class="card-content">
+                            <div class="tool-meta">
+                                <span class="meta-badge">${tool.year || '全年度'}</span>
+                                <span class="meta-badge">${tool.grade || '全学年'}</span>
+                            </div>
                             <span class="card-subject ${tool.subject}">${tool.subject}</span>
                             <h3 class="card-title">${this.escapeHtml(tool.name)}</h3>
                             <p class="card-url">${this.escapeHtml(tool.url)}</p>

@@ -428,6 +428,51 @@
         .close-qr-btn:hover {
             background: #e2e8f0;
         }
+
+        /* フィルター・バッジ設定 */
+        .filter-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            background: white;
+            padding: 1rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: bold;
+        }
+
+        .filter-group select {
+            padding: 0.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .tool-meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .meta-badge {
+            background: #edf2f7;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -438,6 +483,31 @@
     </header>
 
     <div class="container">
+        <div class="filter-container">
+            <div class="filter-group">
+                <label for="filterYear">年度:</label>
+                <select id="filterYear">
+                    <option value="all">すべての年度</option>
+                    <option value="2023年度">2023年度</option>
+                    <option value="2024年度">2024年度</option>
+                    <option value="2025年度">2025年度</option>
+                    <option value="2026年度">2026年度</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterGrade">学年:</label>
+                <select id="filterGrade">
+                    <option value="all">すべての学年</option>
+                    <option value="1年生">1年生</option>
+                    <option value="2年生">2年生</option>
+                    <option value="3年生">3年生</option>
+                    <option value="4年生">4年生</option>
+                    <option value="5年生">5年生</option>
+                    <option value="6年生">6年生</option>
+                </select>
+            </div>
+        </div>
+
         <nav class="subject-tabs" id="subjectTabs">
             <button class="tab-btn active" data-subject="all">すべて</button>
             <button class="tab-btn" data-subject="国語">国語</button>
@@ -514,6 +584,10 @@
                 card.innerHTML = `
                     <div class="card-header ${tool.subject}"></div>
                     <div class="card-body">
+                        <div class="tool-meta">
+                            <span class="meta-badge">${tool.year || '全年度'}</span>
+                            <span class="meta-badge">${tool.grade || '全学年'}</span>
+                        </div>
                         <span class="subject-badge ${tool.subject}">${getEmoji(tool.subject)} ${tool.subject}</span>
                         <h2 class="tool-title">${tool.name}</h2>
                         <div class="action-buttons">
@@ -541,6 +615,25 @@
             return map[subject] || '📄';
         }
 
+        // 状態変数とフィルタリング処理
+        let currentSubject = 'all';
+        let currentYear = 'all';
+        let currentGrade = 'all';
+
+        function updateFilteredTools() {
+            let filtered = allTools;
+            if (currentSubject !== 'all') {
+                filtered = filtered.filter(t => t.subject === currentSubject);
+            }
+            if (currentYear !== 'all') {
+                filtered = filtered.filter(t => !t.year || t.year === '全年度' || t.year === currentYear);
+            }
+            if (currentGrade !== 'all') {
+                filtered = filtered.filter(t => !t.grade || t.grade === '全学年' || t.grade === currentGrade);
+            }
+            renderTools(filtered);
+        }
+
         // タブ切り替え
         document.getElementById('subjectTabs').addEventListener('click', (e) => {
             if (!e.target.classList.contains('tab-btn')) return;
@@ -550,12 +643,19 @@
             e.target.classList.add('active');
 
             // フィルタリング
-            const subject = e.target.dataset.subject;
-            if (subject === 'all') {
-                renderTools(allTools);
-            } else {
-                renderTools(allTools.filter(t => t.subject === subject));
-            }
+            currentSubject = e.target.dataset.subject;
+            updateFilteredTools();
+        });
+
+        // フィルター（年度・学年）
+        document.getElementById('filterYear').addEventListener('change', (e) => {
+            currentYear = e.target.value;
+            updateFilteredTools();
+        });
+
+        document.getElementById('filterGrade').addEventListener('change', (e) => {
+            currentGrade = e.target.value;
+            updateFilteredTools();
         });
 
         // グローバル関数として公開
