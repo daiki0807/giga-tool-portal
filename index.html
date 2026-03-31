@@ -1485,7 +1485,8 @@
 
         // アプリケーション初期化
         const toolManager = new ToolManager();
-        const uiController = new UIController(toolManager);
+        const yearManager = new YearManager();
+        const uiController = new UIController(toolManager, yearManager);
     </script>
 </body>
 
