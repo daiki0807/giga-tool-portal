@@ -1305,6 +1305,31 @@
                     if (this.isAdmin) {
                         this.openModalBtn.style.display = 'flex';
                         this.manageYearsBtn.style.display = 'flex';
+
+                        // --- Migration to 2025 ---
+                        if (!localStorage.getItem('mig_2025_2')) {
+                            this.showLoading();
+                            setTimeout(async () => {
+                                try {
+                                    for (const t of this.toolManager.tools) {
+                                        await this.toolManager.updateTool(t.id, { year: '2025年度', grade: '2年生' });
+                                    }
+                                    if (!this.yearManager.years.includes('2025年度')) {
+                                        await this.yearManager.addYear('2025年度');
+                                    }
+                                    localStorage.setItem('mig_2025_2', 'done');
+                                    alert('既存のすべてのツールを「2025年度・2年生」に変更しました');
+                                    location.reload();
+                                } catch (e) {
+                                    console.error("Migration Error:", e);
+                                    alert('状態の変更に失敗しました');
+                                } finally {
+                                    this.hideLoading();
+                                }
+                            }, 500);
+                        }
+                        // -------------------------
+
                     } else {
                         this.openModalBtn.style.display = 'none';
                         this.manageYearsBtn.style.display = 'none';
